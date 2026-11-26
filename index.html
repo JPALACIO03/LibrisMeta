@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LibrisMeta — Editor de Metadatos de Libros</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+            <path d="M9 7h6" />
+            <path d="M9 11h4" />
+          </svg>
+        </div>
+        <div>
+          <h1>LibrisMeta</h1>
+          <p class="subtitle">Editor local de metadatos para libros electrónicos · 100% en tu navegador</p>
+        </div>
+      </div>
+
+      <nav class="main-nav" aria-label="Secciones de LibrisMeta">
+        <button id="tabEditorBtn" type="button" class="nav-tab active">Editor</button>
+        <button id="tabLibraryBtn" type="button" class="nav-tab">Biblioteca</button>
+        <button id="tabStatsBtn" type="button" class="nav-tab">Estadísticas</button>
+      </nav>
+
+      <div class="topbar-right">
+        <div class="topbar-badges" aria-label="Formatos compatibles">
+          <span class="fmt-pill fmt-epub">EPUB</span>
+          <span class="fmt-pill fmt-pdf">PDF</span>
+          <span class="fmt-pill fmt-mobi">MOBI / AZW3</span>
+          <span class="fmt-pill fmt-fb2">FB2</span>
+          <span class="fmt-pill fmt-cbz">CBZ</span>
+        </div>
+        <button id="accountBtn" type="button" class="btn btn-secondary btn-sm account-btn" title="Iniciar sesión y sincronizar entre dispositivos">
+          <span id="accountStatusDot" class="acct-dot dot-offline" aria-hidden="true"></span>
+          <span id="accountBtnLabel">Cuenta / Sync</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div id="editorView">
+        <!-- Vista de subida inicial -->
+        <section id="uploadSection" class="upload-section">
+          <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Subir archivo de libro">
+            <input id="fileInput" type="file" accept=".epub,.pdf,.mobi,.azw,.azw3,.prc,.fb2,.cbz,.zip" hidden />
+            <div class="dropzone-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M12 16V4" />
+                <path d="m7 9 5-5 5 5" />
+                <path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3" />
+              </svg>
+            </div>
+            <h2>Arrastra tu libro aquí o haz clic para seleccionarlo</h2>
+            <p class="dropzone-hint">
+              Compatible con <strong>EPUB</strong> (ideal para <em>Send to Kindle</em>), <strong>PDF</strong>,
+              <strong>MOBI / AZW3 / PRC</strong>, <strong>FB2 / FB2.ZIP</strong> y <strong>CBZ</strong>.
+            </p>
+            <button id="selectFileBtn" type="button" class="btn btn-primary">
+              Elegir archivo local
+            </button>
+            <p class="privacy-note">
+              Tus libros nunca salen de tu equipo: la lectura, edición y guardado se realizan íntegramente en local.
+            </p>
+          </div>
+        </section>
+
+        <!-- Vista del editor cuando hay un libro cargado -->
+        <section id="editorSection" class="editor-section hidden">
+          <div class="editor-toolbar">
+            <div class="file-breadcrumb">
+              <span id="formatBadge" class="fmt-pill">EPUB</span>
+              <span id="originalFileName" class="orig-filename">libro.epub</span>
+              <span id="fileMetaInfo" class="file-meta-info"></span>
+              <span id="autosaveStatus" class="autosave-pill"
+                title="Los cambios se conservan automáticamente al recargar la página">Guardado en navegador</span>
+            </div>
+            <div class="toolbar-actions">
+              <button id="addToStatsBtn" type="button" class="btn btn-secondary"
+                title="Registrar este libro en Estadísticas y Lecturas">
+                + A mis lecturas
+              </button>
+              <button id="resetBtn" type="button" class="btn btn-ghost"
+                title="Volver a los metadatos originales del archivo">
+                Restablecer
+              </button>
+              <button id="closeBookBtn" type="button" class="btn btn-ghost"
+                title="Cerrar libro actual y limpiar borrador">
+                Cerrar
+              </button>
+              <button id="changeFileBtn" type="button" class="btn btn-secondary">
+                Cargar otro libro
+              </button>
+            </div>
+          </div>
+
+          <div class="editor-grid">
+            <!-- Columna izquierda: Portada, vista previa, exportación -->
+            <aside class="sidebar-panel">
+              <div class="card cover-card">
+                <div class="cover-frame" id="coverFrame">
+                  <img id="coverPreview" class="hidden" alt="Portada del libro" />
+                  <div id="coverPlaceholder" class="cover-placeholder">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                    </svg>
+                    <span>Sin portada detectada</span>
+                  </div>
+                </div>
+
+                <div class="cover-actions">
+                  <input id="coverInput" type="file" accept="image/jpeg,image/png,image/webp" hidden />
+                  <button id="changeCoverBtn" type="button" class="btn btn-secondary btn-sm">
+                    Cambiar portada
+                  </button>
+                  <span id="coverSupportNote" class="muted-note"></span>
+                </div>
+
+                <div class="live-preview-text">
+                  <div id="previewTitle" class="preview-title">Sin título</div>
+                  <div id="previewAuthor" class="preview-author">Autor desconocido</div>
+                </div>
+              </div>
+
+              <div class="card export-card">
+                <h3>Guardar y descargar</h3>
+
+                <div class="field-group">
+                  <label for="outputFilename">Nombre del archivo al descargar</label>
+                  <div class="filename-row">
+                    <input id="outputFilename" type="text" autocomplete="off" />
+                    <span id="outputExt" class="ext-addon">.epub</span>
+                  </div>
+                  <small class="field-hint">Al guardar se usará automáticamente «Título - Autor» (editable si deseas
+                    otro nombre).</small>
+                </div>
+
+                <button id="saveDownloadBtn" type="button" class="btn btn-primary btn-block">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" class="btn-icon">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                  Guardar metadatos y descargar
+                </button>
+
+                <div id="verifyBox" class="verify-box hidden" role="status"></div>
+
+                <div id="kindleTip" class="kindle-tip"></div>
+              </div>
+            </aside>
+
+            <!-- Columna derecha: Formulario de metadatos -->
+            <div class="form-panel">
+              <form id="metadataForm" onsubmit="return false;">
+                <div class="card form-card">
+                  <div class="card-header">
+                    <h3>Información principal</h3>
+                    <span class="card-badge">Compatible con Kindle y lectores</span>
+                  </div>
+
+                  <div class="form-grid">
+                    <div class="field-group col-span-2">
+                      <label for="metaTitle">Título del libro</label>
+                      <input id="metaTitle" type="text" placeholder="Ej. Cien años de soledad" />
+                    </div>
+
+                    <div class="field-group">
+                      <label for="metaAuthor">Autor(es)</label>
+                      <input id="metaAuthor" type="text" placeholder="Ej. Gabriel García Márquez" />
+                      <small class="field-hint">Para varios autores usa punto y coma (<code>;</code>), así las comas en
+                        «Apellido, Nombre» se conservan.</small>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="metaAuthorSort">Ordenar autor (File-as)</label>
+                      <input id="metaAuthorSort" type="text" placeholder="Ej. García Márquez, Gabriel" />
+                      <small class="field-hint">Usado por Kindle/Calibre para ordenar alfabéticamente (EPUB).</small>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="metaLanguage">Idioma</label>
+                      <input id="metaLanguage" type="text" list="languageSuggestions" placeholder="Ej. es, en, fr..." />
+                      <datalist id="languageSuggestions">
+                        <option value="es">Español (es)</option>
+                        <option value="en">Inglés (en)</option>
+                        <option value="fr">Francés (fr)</option>
+                        <option value="pt">Portugués (pt)</option>
+                        <option value="de">Alemán (de)</option>
+                        <option value="it">Italiano (it)</option>
+                        <option value="ca">Catalán (ca)</option>
+                        <option value="ja">Japonés (ja)</option>
+                      </datalist>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="metaDate">Fecha de publicación</label>
+                      <input id="metaDate" type="text" placeholder="Ej. 2024-05-15 o 2024" />
+                    </div>
+
+                    <div class="field-group">
+                      <label for="metaSeries">Serie / Colección</label>
+                      <input id="metaSeries" type="text" placeholder="Ej. El Archivo de las Tormentas" />
+                    </div>
+
+                    <div class="field-group">
+                      <label for="metaSeriesIndex">Número en la serie</label>
+                      <input id="metaSeriesIndex" type="text" placeholder="Ej. 1 o 1.5" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card form-card">
+                  <div class="card-header">
+                    <h3>Publicación e identificadores</h3>
+                  </div>
+
+                  <div class="form-grid">
+                    <div class="field-group">
+                      <label for="metaPublisher">Editorial</label>
+                      <input id="metaPublisher" type="text" placeholder="Ej. Editorial Sudamericana" />
+                    </div>
+
+                    <div class="field-group">
+                      <label for="metaIdentifier">ISBN / Identificador</label>
+                      <input id="metaIdentifier" type="text" placeholder="Ej. 978-84-376-0494-7" />
+                    </div>
+
+                    <div class="field-group col-span-2">
+                      <label for="metaRights">Derechos / Copyright</label>
+                      <input id="metaRights" type="text" placeholder="Ej. © 2024 Todos los derechos reservados" />
+                    </div>
+
+                    <div id="pdfExtraFields" class="pdf-extra-fields col-span-2 hidden">
+                      <div class="form-grid">
+                        <div class="field-group">
+                          <label for="metaCreatorTool">Aplicación creadora (PDF Creator)</label>
+                          <input id="metaCreatorTool" type="text" placeholder="Ej. LibreOffice / Calibre" />
+                        </div>
+                        <div class="field-group">
+                          <label for="metaProducer">Productor (PDF Producer)</label>
+                          <input id="metaProducer" type="text" placeholder="Ej. pdf-lib" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div id="kindleExtraFields" class="kindle-extra-fields col-span-2 hidden">
+                      <div class="form-grid">
+                        <div class="field-group">
+                          <label for="metaAsin">ASIN de Amazon (opcional, MOBI / AZW3)</label>
+                          <input id="metaAsin" type="text" placeholder="Ej. B08N5WRWNW" />
+                          <small class="field-hint">Para vincular ficha de autor / Goodreads al copiar por USB al
+                            Kindle.</small>
+                        </div>
+                        <div class="field-group">
+                          <label for="metaCdeType">Tipo en Kindle (EXTH 501)</label>
+                          <select id="metaCdeType">
+                            <option value="">Conservar original</option>
+                            <option value="EBOK">EBOK — Libro (recomendado con ASIN por USB)</option>
+                            <option value="PDOC">PDOC — Documento personal</option>
+                          </select>
+                          <small class="field-hint">Send to Kindle fuerza PDOC en la nube; por USB puedes usar
+                            EBOK.</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card form-card">
+                  <div class="card-header">
+                    <h3>Géneros, etiquetas y sinopsis</h3>
+                  </div>
+
+                  <div class="form-grid">
+                    <div class="field-group col-span-2">
+                      <label for="tagInput">Géneros / Etiquetas (Subjects / Keywords)</label>
+                      <div id="tagsContainer" class="tags-input-box">
+                        <input id="tagInput" type="text" placeholder="Escribe una etiqueta y pulsa Enter o coma..." />
+                      </div>
+                    </div>
+
+                    <div class="field-group col-span-2">
+                      <label for="metaDescription">Sinopsis / Descripción</label>
+                      <textarea id="metaDescription" rows="5"
+                        placeholder="Resumen o descripción del libro..."></textarea>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Metadatos avanzados / personalizados -->
+                <div class="card form-card">
+                  <details id="advancedDetails" class="advanced-details">
+                    <summary class="advanced-summary">
+                      <span>Metadatos avanzados y personalizados</span>
+                      <span id="customCountBadge" class="count-pill">0 campos</span>
+                    </summary>
+                    <div class="advanced-body">
+                      <p class="advanced-intro">
+                        Aquí puedes ver, editar o añadir campos específicos del formato
+                        (por ejemplo etiquetas <code>dc:*</code> o <code>&lt;meta&gt;</code> en EPUB,
+                        registros EXTH en MOBI/AZW3, o claves personalizadas en PDF/FB2/CBZ).
+                      </p>
+                      <div id="customFieldsList" class="custom-fields-list"></div>
+                      <button id="addCustomFieldBtn" type="button" class="btn btn-secondary btn-sm">
+                        + Añadir campo personalizado
+                      </button>
+                    </div>
+                  </details>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+        <!-- Barra inferior fija para móvil y tablet -->
+        <div id="mobileActionBar" class="mobile-action-bar hidden">
+          <button id="mobileSaveBtn" type="button" class="btn btn-primary btn-block">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" class="btn-icon">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            Guardar metadatos y descargar
+          </button>
+        </div>
+      </div><!-- /#editorView -->
+
+      <!-- Sección independiente: Estadísticas y Lecturas -->
+      <section id="statsSection" class="stats-section hidden">
+        <div class="card stats-import-card">
+          <div class="card-header">
+            <div>
+              <h3>Importar datos nativos de tu Kindle (sin jailbreak)</h3>
+              <p class="stats-subtitle">
+                Lee directamente los archivos visibles de tu Kindle conectado por USB o el paquete oficial de datos de
+                Amazon. Todo se procesa y guarda en local.
+              </p>
+            </div>
+            <div class="stats-backup-actions">
+              <button id="exportStatsJsonBtn" type="button" class="btn btn-secondary btn-sm">Exportar respaldo
+                (.json)</button>
+              <button id="clearStatsBtn" type="button" class="btn btn-ghost btn-sm">Limpiar datos</button>
+            </div>
+          </div>
+
+          <div class="import-options-grid">
+            <div class="import-box">
+              <h4>1. Carpeta <code>documents</code> del Kindle (USB)</h4>
+              <p>Conecta tu Kindle por cable USB y selecciona la carpeta <code>documents</code>. Lee tus libros, detecta
+                cuáles abriste (carpetas <code>.sdr</code>) e importa <code>My Clippings.txt</code>.</p>
+              <input id="kindleFolderInput" type="file" webkitdirectory multiple hidden />
+              <button id="importKindleFolderBtn" type="button" class="btn btn-primary btn-sm">
+                Seleccionar carpeta del Kindle
+              </button>
+            </div>
+
+            <div class="import-box">
+              <h4>2. Datos oficiales de Amazon o <code>My Clippings.txt</code></h4>
+              <p>Pide tu archivo de Kindle en Amazon, confirma el correo y cuando te llegue el <code>.zip</code> súbelo
+                aquí (también admite <code>.csv</code>, <code>.txt</code> o respaldo <code>.json</code>).</p>
+              <div class="amazon-shortcut-row">
+                <select id="amazonRegionSelect" aria-label="Tienda de Amazon">
+                  <option value="amazon.com.mx">amazon.com.mx</option>
+                  <option value="amazon.es">amazon.es</option>
+                  <option value="amazon.com">amazon.com</option>
+                </select>
+                <a id="openAmazonRequestLink" class="btn btn-secondary btn-sm"
+                  href="https://www.amazon.com.mx/hz/privacy-central/data-requests/preview.html" target="_blank"
+                  rel="noopener">
+                  Pedir datos a Amazon
+                </a>
+              </div>
+              <input id="amazonFilesInput" type="file" accept=".zip,.csv,.txt,.json" multiple hidden />
+              <button id="importAmazonFilesBtn" type="button" class="btn btn-primary btn-sm">
+                Subir ZIP / CSV / TXT / JSON
+              </button>
+            </div>
+
+            <div class="import-box">
+              <h4>3. Añadir libro desde archivo</h4>
+              <p>Selecciona un libro (<code>.epub</code>, <code>.pdf</code>, <code>.azw3</code>, <code>.mobi</code>,
+                <code>.fb2</code>, <code>.cbz</code>) para extraer automáticamente portada, título y autor.
+              </p>
+              <input id="statsBookFileInput" type="file" accept=".epub,.pdf,.mobi,.azw,.azw3,.prc,.fb2,.cbz,.zip"
+                multiple hidden />
+              <div class="import-box-actions">
+                <button id="addBookFileBtn" type="button" class="btn btn-primary btn-sm">
+                  + Seleccionar libro
+                </button>
+                <button id="addManualBookBtn" type="button" class="link-btn">
+                  ¿Libro en papel? Añadir manualmente
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <form id="manualBookForm" class="manual-book-form hidden">
+            <div class="manual-form-grid">
+              <input id="manualTitle" type="text" placeholder="Título del libro *" required />
+              <input id="manualAuthor" type="text" placeholder="Autor" />
+              <input id="manualAsin" type="text" placeholder="ASIN / ISBN (opcional)" />
+              <select id="manualStatus">
+                <option value="reading">Leyendo</option>
+                <option value="finished">Leído</option>
+                <option value="unread">Por leer</option>
+              </select>
+              <div class="manual-form-btns">
+                <button type="submit" class="btn btn-primary btn-sm">Guardar libro</button>
+                <button id="cancelManualBookBtn" type="button" class="btn btn-ghost btn-sm">Cancelar</button>
+              </div>
+            </div>
+          </form>
+
+
+        </div>
+
+        <!-- Tarjetas resumen (KPIs) -->
+        <div class="kpi-grid">
+          <div class="card kpi-card">
+            <span class="kpi-label">Libros en biblioteca</span>
+            <strong id="kpiTotalBooks" class="kpi-value">0</strong>
+            <span id="kpiReadingBooks" class="kpi-sub">0 en curso</span>
+          </div>
+          <div class="card kpi-card">
+            <span class="kpi-label">Libros leídos</span>
+            <strong id="kpiFinishedBooks" class="kpi-value">0</strong>
+            <span class="kpi-sub">Completados</span>
+          </div>
+          <div class="card kpi-card">
+            <span class="kpi-label">Tiempo / Subrayados</span>
+            <strong id="kpiTotalTime" class="kpi-value">0 min</strong>
+            <span id="kpiTimeSub" class="kpi-sub">0 subrayados/notas</span>
+          </div>
+          <div class="card kpi-card">
+            <span class="kpi-label">Mejor racha</span>
+            <strong id="kpiStreak" class="kpi-value">0 días</strong>
+            <span id="kpiStreakSub" class="kpi-sub">Actual: 0 d</span>
+          </div>
+        </div>
+
+        <!-- Gráfica mensual y top autores -->
+        <div class="analytics-grid">
+          <div class="card chart-card">
+            <div class="card-header">
+              <div>
+                <h3>Actividad últimos 6 meses</h3>
+                <p id="monthlyChartSubtitle" class="stats-subtitle">Actividad mensual</p>
+              </div>
+            </div>
+            <div id="monthlyChart" class="monthly-chart"></div>
+          </div>
+
+          <div class="card authors-card">
+            <div class="card-header">
+              <h3>Autores más presentes</h3>
+            </div>
+            <div id="topAuthorsList" class="top-authors-list"></div>
+          </div>
+        </div>
+
+        <!-- Biblioteca y progreso por libro -->
+        <div class="card library-card">
+          <div class="library-toolbar">
+            <div class="library-title-wrap">
+              <h3>Tus libros y progreso</h3>
+              <span id="statsListCount" class="count-pill">0 de 0</span>
+            </div>
+            <div class="library-filters">
+              <input id="statsSearchInput" type="search" class="stats-search"
+                placeholder="Buscar por título, autor o ASIN..." />
+              <div class="filter-chips">
+                <button type="button" class="filter-chip" data-filter="all">Todos</button>
+                <button type="button" class="filter-chip" data-filter="reading">Leyendo</button>
+                <button type="button" class="filter-chip active" data-filter="finished">Leídos</button>
+                <button type="button" class="filter-chip" data-filter="unread">Por leer</button>
+                <button type="button" class="filter-chip" data-filter="highlights">Con citas</button>
+              </div>
+            </div>
+          </div>
+          <div id="statsBooksList" class="stats-books-list"></div>
+        </div>
+      </section>
+
+      <!-- Sección independiente: Biblioteca visual -->
+      <section id="librarySection" class="library-gallery-section hidden">
+        <div class="card library-gallery-toolbar-card">
+          <div class="library-toolbar">
+            <div class="library-title-wrap">
+              <h3>Mi Biblioteca</h3>
+              <span id="libTotalBadge" class="count-pill">0 libros</span>
+            </div>
+            <div class="library-filters">
+              <input id="libSearchInput" type="search" class="stats-search"
+                placeholder="Buscar por título, autor o etiqueta..." />
+              <div class="filter-chips" id="libFilterChips">
+                <button type="button" class="lib-filter-chip active" data-filter="all">Todos</button>
+                <button type="button" class="lib-filter-chip" data-filter="reading">Leyendo</button>
+                <button type="button" class="lib-filter-chip" data-filter="finished">Leídos</button>
+                <button type="button" class="lib-filter-chip" data-filter="unread">Por leer</button>
+              </div>
+              <button id="libAddBookBtn" type="button" class="btn btn-primary btn-sm">
+                + Añadir libro
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="libraryGrid" class="library-shelf-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal de detalles y descripción del libro -->
+  <div id="bookDetailModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="bdModalTitle">
+    <div class="modal-card modal-book-detail">
+      <div class="modal-header">
+        <h3 id="bdModalTitle">Detalles del libro</h3>
+        <button id="bdCloseBtn" type="button" class="btn btn-ghost btn-sm">Cerrar</button>
+      </div>
+      <div id="bdModalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Modal para leer y exportar subrayados/notas -->
+  <div id="highlightsModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="hlModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="hlModalTitle">Subrayados y notas</h3>
+        <div class="modal-header-actions">
+          <button id="hlExportBtn" type="button" class="btn btn-secondary btn-sm">Exportar (.md)</button>
+          <button id="hlCloseBtn" type="button" class="btn btn-ghost btn-sm">Cerrar</button>
+        </div>
+      </div>
+      <div id="hlModalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Modal de cuenta y sincronización en la nube (Netlify) -->
+  <div id="authModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <div class="modal-card modal-auth">
+      <div class="modal-header">
+        <h3 id="authModalTitle">Cuenta y sincronización</h3>
+        <button id="authCloseBtn" type="button" class="btn btn-ghost btn-sm">Cerrar</button>
+      </div>
+      <div class="modal-body">
+        <div id="authFileProtocolNotice" class="auth-notice hidden">
+          Estás abriendo el archivo localmente (<code>file://</code>). Para sincronizar entre PC y móvil abre LibrisMeta desde tu sitio publicado en <strong>Netlify</strong> (o <code>netlify dev</code>).
+        </div>
+
+        <div id="authLoggedOutView">
+          <p class="auth-intro">
+            Inicia sesión o crea una cuenta para respaldar y sincronizar tu <strong>Biblioteca</strong> y <strong>Estadísticas</strong> entre tu PC y tu móvil.
+          </p>
+          <div class="auth-mode-tabs">
+            <button id="authModeLogin" type="button" class="auth-mode-tab active">Iniciar sesión</button>
+            <button id="authModeRegister" type="button" class="auth-mode-tab">Crear cuenta</button>
+          </div>
+          <form id="authForm" class="auth-form">
+            <div class="field-group">
+              <label for="authUsername">Usuario</label>
+              <input id="authUsername" type="text" autocomplete="username" minlength="3" maxlength="32" placeholder="Ej. juan_lector" required />
+            </div>
+            <div class="field-group">
+              <label for="authPassword">Contraseña</label>
+              <input id="authPassword" type="password" autocomplete="current-password" minlength="6" maxlength="128" placeholder="Mínimo 6 caracteres" required />
+            </div>
+            <div id="authErrorBox" class="auth-error hidden" role="alert"></div>
+            <button id="authSubmitBtn" type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
+          </form>
+        </div>
+
+        <div id="authLoggedInView" class="hidden">
+          <div class="auth-profile-card">
+            <div>
+              <span class="auth-profile-label">Sesión iniciada como</span>
+              <strong id="authUserDisplay" class="auth-profile-name">usuario</strong>
+            </div>
+            <span id="authLastSyncText" class="auth-sync-time">Última sincronización: nunca</span>
+          </div>
+          <div class="auth-logged-actions">
+            <button id="syncNowBtn" type="button" class="btn btn-primary">Sincronizar ahora</button>
+            <button id="logoutBtn" type="button" class="btn btn-secondary">Cerrar sesión</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden" role="alert"></div>
+
+  <!-- Librerías locales (sin dependencias externas en tiempo de ejecución) -->
+  <script src="vendor/jszip.min.js"></script>
+  <script src="vendor/pdf-lib.min.js"></script>
+
+  <!-- Lógica de la aplicación y controladores por formato -->
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/handlers/epub.js"></script>
+  <script src="js/handlers/pdf.js"></script>
+  <script src="js/handlers/mobi.js"></script>
+  <script src="js/handlers/fb2.js"></script>
+  <script src="js/handlers/cbz.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
