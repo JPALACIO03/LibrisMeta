@@ -6,6 +6,7 @@
   const AUTH_STORAGE_KEY = "LibrisMeta_auth_v1";
   let syncTimer = null;
   let syncInFlight = false;
+  let syncQueued = false;
   let lastSyncAttemptAt = 0;
   let notifyFn = function () {};
 
@@ -130,7 +131,10 @@
   async function syncNow(showMessage) {
     const sess = getSession();
     if (!sess || !isCloudSupported() || !global.BookStats) return false;
-    if (syncInFlight) return false;
+    if (syncInFlight) {
+      syncQueued = true;
+      return false;
+    }
 
     syncInFlight = true;
     lastSyncAttemptAt = Date.now();
@@ -163,6 +167,7 @@
       return true;
     } catch (err) {
       if (err && err.status === 401) {
+        syncQueued = false;
         clearSession();
         renderAuthModalView();
         notifyFn("Tu sesión expiró. Inicia sesión nuevamente para sincronizar.", "error");
@@ -175,6 +180,10 @@
       return false;
     } finally {
       syncInFlight = false;
+      if (syncQueued) {
+        syncQueued = false;
+        syncNow(false);
+      }
     }
   }
 
@@ -184,14 +193,35 @@
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
       syncNow(false);
-    }, 450);
+    }, 300);
+  }
+
+  function flushPushKeepalive() {
+    const sess = getSession();
+    if (!sess || !isCloudSupported() || !global.BookStats) return;
+    try {
+      const payload = global.BookStats.getExportPayload();
+      const json = JSON.stringify(payload);
+      if (json.length <= 60 * 1024) {
+        fetch("/api/sync", {
+          method: "POST",
+          keepalive: true,
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${sess.token}`
+          },
+          body: json
+        }).catch(() => {});
+      }
+    } catch (_) {}
   }
 
   function syncIfStale(minAgeMs) {
     const sess = getSession();
-    if (!sess || !isCloudSupported() || syncInFlight) return;
+    if (!sess || !isCloudSupported()) return;
+    if (syncInFlight) return;
     const age = Date.now() - lastSyncAttemptAt;
-    if (age >= (minAgeMs || 4000)) {
+    if (age >= (minAgeMs || 2000)) {
       syncNow(false);
     }
   }
@@ -290,17 +320,22 @@
 
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
-        syncIfStale(3000);
+        syncIfStale(1500);
+      } else if (syncTimer) {
+        flushPushKeepalive();
       }
     });
     window.addEventListener("focus", () => {
-      syncIfStale(3000);
+      syncIfStale(1500);
+    });
+    window.addEventListener("pagehide", () => {
+      if (syncTimer) flushPushKeepalive();
     });
     setInterval(() => {
       if (document.visibilityState === "visible") {
-        syncIfStale(15000);
+        syncIfStale(9000);
       }
-    }, 20000);
+    }, 10000);
   }
 
   global.BookSync = {

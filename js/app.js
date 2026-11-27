@@ -693,7 +693,7 @@
         if (window.BookStats.renderLibraryView) window.BookStats.renderLibraryView();
       }
       if (window.BookSync && window.BookSync.syncIfStale) {
-        window.BookSync.syncIfStale(3000);
+        window.BookSync.syncIfStale(1500);
       }
     } else if (state.originalBytes) {
       els.mobileActionBar.classList.remove("hidden");
