@@ -1282,6 +1282,7 @@ html, body {
 }
 
 .lib-book-cover {
+  position: relative;
   width: 68px;
   height: 102px;
   flex-shrink: 0;
@@ -1292,6 +1293,73 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.lib-cover-progress {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(31, 29, 26, 0.84);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+
+.lib-controls-toggle {
+  display: none;
+  margin-top: 10px;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.lib-controls-toggle:hover {
+  border-color: var(--border-strong);
+  background: var(--bg);
+}
+
+.lib-controls-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lib-toggle-status {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.lib-controls-chevron {
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: transform 0.18s ease;
+}
+
+.library-book-card.is-controls-open .lib-controls-chevron {
+  transform: rotate(180deg);
 }
 
 .lib-book-cover img {
@@ -1503,6 +1571,36 @@ html, body {
   .manual-form-btns {
     grid-column: 1 / -1;
   }
+  .lib-controls-toggle {
+    display: flex;
+  }
+  .lib-book-controls {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: end;
+  }
+  .library-book-card.is-controls-open .lib-book-controls {
+    display: grid;
+  }
+  .inline-ctrl {
+    min-width: 0;
+  }
+  .inline-ctrl select,
+  .inline-ctrl input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .ctrl-progress input {
+    width: 100%;
+  }
+  .lib-book-actions {
+    grid-column: 1 / -1;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1555,7 +1653,6 @@ html, body {
     width: 100%;
   }
   .lib-book-controls {
-    display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 10px;
   }

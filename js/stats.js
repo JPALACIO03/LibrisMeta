@@ -30,6 +30,7 @@
   let libFilter = "all";
   let libSearchQuery = "";
   let onToast = function () {};
+  const expandedStatsBooks = new Set();
 
   function normalizeText(str) {
     return String(str || "")
@@ -896,8 +897,14 @@
 
     for (const book of filtered) {
       const hlList = getHighlightsForBook(book);
+      const pct = book.status === "finished"
+        ? 100
+        : Math.max(0, Math.min(100, Number(book.progress) || 0));
+      const stMeta = getStatusMeta(book.status);
+      const isExpanded = expandedStatsBooks.has(book.id);
+
       const card = document.createElement("article");
-      card.className = "library-book-card";
+      card.className = isExpanded ? "library-book-card is-controls-open" : "library-book-card";
 
       const metaBadges = [];
       if (book.format) metaBadges.push(`<span class="mini-pill">${BookUtils.escapeXml(book.format)}</span>`);
@@ -919,7 +926,10 @@
 
       card.innerHTML = `
         <div class="lib-book-layout">
-          <div class="lib-book-cover">${coverHtml}</div>
+          <div class="lib-book-cover">
+            ${coverHtml}
+            <span class="lib-cover-progress" aria-label="Progreso de lectura">${pct}%</span>
+          </div>
           <div class="lib-book-main">
             <div class="lib-book-head">
               <div>
@@ -929,6 +939,13 @@
               </div>
               <div class="lib-book-badges">${metaBadges.join("")}</div>
             </div>
+            <button type="button" class="lib-controls-toggle" data-act="toggleControls" aria-expanded="${isExpanded ? "true" : "false"}">
+              <span class="lib-controls-toggle-label">
+                <span class="lib-toggle-status ${stMeta.cls}">${stMeta.label}</span>
+                <span>Estado, progreso y fechas</span>
+              </span>
+              <span class="lib-controls-chevron" aria-hidden="true">▾</span>
+            </button>
             <div class="lib-book-controls">
               <label class="inline-ctrl">
                 <span>Estado</span>
@@ -940,7 +957,7 @@
               </label>
               <label class="inline-ctrl ctrl-progress">
                 <span>Progreso %</span>
-                <input type="number" min="0" max="100" value="${book.progress || (book.status === "finished" ? 100 : 0)}" data-act="progress" />
+                <input type="number" min="0" max="100" value="${pct}" data-act="progress" />
               </label>
               <label class="inline-ctrl">
                 <span>Inicio lectura</span>
@@ -969,6 +986,17 @@
           </div>
         </div>
       `;
+
+      const toggleControlsBtn = card.querySelector('[data-act="toggleControls"]');
+      if (toggleControlsBtn) {
+        toggleControlsBtn.addEventListener("click", () => {
+          const nextOpen = !card.classList.contains("is-controls-open");
+          card.classList.toggle("is-controls-open", nextOpen);
+          toggleControlsBtn.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+          if (nextOpen) expandedStatsBooks.add(book.id);
+          else expandedStatsBooks.delete(book.id);
+        });
+      }
 
       // Enlazar cambios inline
       card.querySelector('[data-act="status"]').addEventListener("change", async (e) => {
