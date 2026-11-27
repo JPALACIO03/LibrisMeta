@@ -1390,51 +1390,61 @@
       });
     }
 
-    folderBtn.addEventListener("click", () => folderInput.click());
-    folderInput.addEventListener("change", () => {
-      if (folderInput.files && folderInput.files.length) {
-        importKindleFolder(folderInput.files);
-        folderInput.value = "";
-      }
-    });
-
-    filesBtn.addEventListener("click", () => filesInput.click());
-    filesInput.addEventListener("change", () => {
-      if (filesInput.files && filesInput.files.length) {
-        importOfficialOrTextFiles(filesInput.files);
-        filesInput.value = "";
-      }
-    });
-
-    addManualBtn.addEventListener("click", () => {
-      manualForm.classList.toggle("hidden");
-    });
-    cancelManualBtn.addEventListener("click", () => {
-      manualForm.classList.add("hidden");
-    });
-
-    manualForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const title = document.getElementById("manualTitle").value.trim();
-      if (!title) return;
-      const author = document.getElementById("manualAuthor").value.trim();
-      const status = document.getElementById("manualStatus").value;
-      const asin = document.getElementById("manualAsin").value.trim();
-      upsertBook({
-        title,
-        author,
-        asin,
-        status,
-        progress: status === "finished" ? 100 : (status === "reading" ? 25 : 0),
-        endDate: status === "finished" ? BookUtils.formatDateYMD(new Date()) : "",
-        source: "Manual"
+    if (folderBtn && folderInput) {
+      folderBtn.addEventListener("click", () => folderInput.click());
+      folderInput.addEventListener("change", () => {
+        if (folderInput.files && folderInput.files.length) {
+          importKindleFolder(folderInput.files);
+          folderInput.value = "";
+        }
       });
-      manualForm.reset();
-      manualForm.classList.add("hidden");
-      await persistStats();
-      renderStatsView();
-      onToast("Libro registrado en tus lecturas.", "success");
-    });
+    }
+
+    if (filesBtn && filesInput) {
+      filesBtn.addEventListener("click", () => filesInput.click());
+      filesInput.addEventListener("change", () => {
+        if (filesInput.files && filesInput.files.length) {
+          importOfficialOrTextFiles(filesInput.files);
+          filesInput.value = "";
+        }
+      });
+    }
+
+    if (addManualBtn && manualForm) {
+      addManualBtn.addEventListener("click", () => {
+        manualForm.classList.toggle("hidden");
+      });
+    }
+    if (cancelManualBtn && manualForm) {
+      cancelManualBtn.addEventListener("click", () => {
+        manualForm.classList.add("hidden");
+      });
+    }
+
+    if (manualForm) {
+      manualForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = document.getElementById("manualTitle").value.trim();
+        if (!title) return;
+        const author = document.getElementById("manualAuthor").value.trim();
+        const status = document.getElementById("manualStatus").value;
+        const asin = document.getElementById("manualAsin").value.trim();
+        upsertBook({
+          title,
+          author,
+          asin,
+          status,
+          progress: status === "finished" ? 100 : (status === "reading" ? 25 : 0),
+          endDate: status === "finished" ? BookUtils.formatDateYMD(new Date()) : "",
+          source: "Manual"
+        });
+        manualForm.reset();
+        manualForm.classList.add("hidden");
+        await persistStats();
+        renderStatsView();
+        onToast("Libro registrado en tus lecturas.", "success");
+      });
+    }
 
     for (const pill of Array.from(document.querySelectorAll(".filter-chip"))) {
       pill.addEventListener("click", () => {
@@ -1445,46 +1455,56 @@
       });
     }
 
-    searchInput.addEventListener("input", () => {
-      searchQuery = searchInput.value;
-      renderStatsView();
-    });
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        searchQuery = searchInput.value;
+        renderStatsView();
+      });
+    }
 
-    exportJsonBtn.addEventListener("click", () => {
-      const payload = JSON.stringify({
-        exportedAt: new Date().toISOString(),
-        books: statsState.books,
-        highlights: statsState.highlights,
-        sessions: statsState.sessions
-      }, null, 2);
-      BookUtils.triggerDownload(
-        BookUtils.encodeUtf8(payload),
-        `LibrisMeta-Estadisticas-${BookUtils.formatDateYMD(new Date())}.json`,
-        "application/json"
-      );
-      onToast("Respaldo JSON descargado.", "success");
-    });
+    if (exportJsonBtn) {
+      exportJsonBtn.addEventListener("click", () => {
+        const payload = JSON.stringify({
+          exportedAt: new Date().toISOString(),
+          books: statsState.books,
+          highlights: statsState.highlights,
+          sessions: statsState.sessions
+        }, null, 2);
+        BookUtils.triggerDownload(
+          BookUtils.encodeUtf8(payload),
+          `LibrisMeta-Estadisticas-${BookUtils.formatDateYMD(new Date())}.json`,
+          "application/json"
+        );
+        onToast("Respaldo JSON descargado.", "success");
+      });
+    }
 
-    clearStatsBtn.addEventListener("click", async () => {
-      const now = Date.now();
-      for (const b of statsState.books) {
-        statsState.deletedIds.push({ id: b.id, deletedAt: now });
-      }
-      statsState.books = [];
-      statsState.highlights = [];
-      statsState.sessions = [];
-      if (global.BookStorage && global.BookStorage.clearStats) {
-        await global.BookStorage.clearStats();
-      }
-      renderStatsView();
-      renderLibraryView();
-      onToast("Se limpiaron los datos locales.");
-    });
+    if (clearStatsBtn) {
+      clearStatsBtn.addEventListener("click", async () => {
+        const now = Date.now();
+        for (const b of statsState.books) {
+          statsState.deletedIds.push({ id: b.id, deletedAt: now });
+        }
+        statsState.books = [];
+        statsState.highlights = [];
+        statsState.sessions = [];
+        if (global.BookStorage && global.BookStorage.clearStats) {
+          await global.BookStorage.clearStats();
+        }
+        renderStatsView();
+        renderLibraryView();
+        onToast("Se limpiaron los datos locales.");
+      });
+    }
 
-    hlCloseBtn.addEventListener("click", () => hlModal.classList.add("hidden"));
-    hlModal.addEventListener("click", (e) => {
-      if (e.target === hlModal) hlModal.classList.add("hidden");
-    });
+    if (hlCloseBtn && hlModal) {
+      hlCloseBtn.addEventListener("click", () => hlModal.classList.add("hidden"));
+    }
+    if (hlModal) {
+      hlModal.addEventListener("click", (e) => {
+        if (e.target === hlModal) hlModal.classList.add("hidden");
+      });
+    }
 
     // Eventos de la vista Biblioteca y Modal de detalles
     const libSearchInput = document.getElementById("libSearchInput");
