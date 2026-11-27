@@ -48,13 +48,41 @@ export function verifyPassword(password, salt, expectedHashHex) {
   return crypto.timingSafeEqual(actual, expected);
 }
 
+function createSafeStore(name) {
+  let strongStore = null;
+  try {
+    strongStore = getStore({ name, consistency: "strong" });
+  } catch (_) {}
+  const fallbackStore = getStore(name);
+
+  return {
+    async get(key, opts) {
+      if (strongStore) {
+        try {
+          return await strongStore.get(key, opts);
+        } catch (err) {
+          if (err && err.name === "BlobsConsistencyError") {
+            strongStore = null;
+          } else {
+            throw err;
+          }
+        }
+      }
+      return fallbackStore.get(key, opts);
+    },
+    async setJSON(key, data, opts) {
+      return fallbackStore.setJSON(key, data, opts);
+    }
+  };
+}
+
 export async function getAuthSecret() {
   if (process.env.AUTH_SECRET && process.env.AUTH_SECRET.length >= 16) {
     return process.env.AUTH_SECRET;
   }
   if (cachedSecret) return cachedSecret;
 
-  const sysStore = getStore(SYSTEM_STORE);
+  const sysStore = createSafeStore(SYSTEM_STORE);
   const existing = await sysStore.get("jwt-secret", { type: "json" });
   if (existing && existing.secret) {
     cachedSecret = existing.secret;
@@ -112,9 +140,9 @@ export async function verifyTokenFromRequest(req) {
 }
 
 export function getUsersStore() {
-  return getStore(USERS_STORE);
+  return createSafeStore(USERS_STORE);
 }
 
 export function getLibraryStore() {
-  return getStore(LIBRARY_STORE);
+  return createSafeStore(LIBRARY_STORE);
 }

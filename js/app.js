@@ -403,6 +403,10 @@
       populateForm(parsed.metadata, parsed.cover);
       els.outputFilename.value = buildTitleAuthorFilename();
       await persistCurrentSessionNow();
+      // Registrar y sincronizar automáticamente al subir cualquier libro nuevo en el editor
+      if (window.BookStats) {
+        window.BookStats.addBookFromEditor(parsed.metadata, detected.ext, parsed.cover, { silent: true });
+      }
       showToast(`Libro cargado (${parsed.details}). Tus cambios se guardan automáticamente.`, "success");
     }
   }
@@ -687,6 +691,9 @@
       if (window.BookStats) {
         window.BookStats.renderStatsView();
         if (window.BookStats.renderLibraryView) window.BookStats.renderLibraryView();
+      }
+      if (window.BookSync && window.BookSync.syncIfStale) {
+        window.BookSync.syncIfStale(3000);
       }
     } else if (state.originalBytes) {
       els.mobileActionBar.classList.remove("hidden");

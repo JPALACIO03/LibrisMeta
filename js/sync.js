@@ -6,6 +6,7 @@
   const AUTH_STORAGE_KEY = "LibrisMeta_auth_v1";
   let syncTimer = null;
   let syncInFlight = false;
+  let lastSyncAttemptAt = 0;
   let notifyFn = function () {};
 
   function isCloudSupported() {
@@ -132,6 +133,7 @@
     if (syncInFlight) return false;
 
     syncInFlight = true;
+    lastSyncAttemptAt = Date.now();
     updateAccountButton("Sincronizando...", true);
 
     try {
@@ -182,7 +184,16 @@
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
       syncNow(false);
-    }, 650);
+    }, 450);
+  }
+
+  function syncIfStale(minAgeMs) {
+    const sess = getSession();
+    if (!sess || !isCloudSupported() || syncInFlight) return;
+    const age = Date.now() - lastSyncAttemptAt;
+    if (age >= (minAgeMs || 4000)) {
+      syncNow(false);
+    }
   }
 
   function logout() {
@@ -273,9 +284,23 @@
 
     renderAuthModalView();
     if (getSession() && isCloudSupported()) {
-      // Sincronizar automáticamente en segundo plano al abrir la app
+      // Sincronizar automáticamente al abrir, al volver a la pestaña y periódicamente
       syncNow(false);
     }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        syncIfStale(3000);
+      }
+    });
+    window.addEventListener("focus", () => {
+      syncIfStale(3000);
+    });
+    setInterval(() => {
+      if (document.visibilityState === "visible") {
+        syncIfStale(15000);
+      }
+    }, 20000);
   }
 
   global.BookSync = {
@@ -283,6 +308,7 @@
     getSession,
     authenticate,
     syncNow,
+    syncIfStale,
     schedulePush,
     logout
   };

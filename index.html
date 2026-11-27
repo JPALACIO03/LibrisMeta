@@ -27,9 +27,10 @@
       </div>
 
       <nav class="main-nav" aria-label="Secciones de LibrisMeta">
-        <button id="tabEditorBtn" type="button" class="nav-tab active">Editor</button>
         <button id="tabLibraryBtn" type="button" class="nav-tab">Biblioteca</button>
         <button id="tabStatsBtn" type="button" class="nav-tab">Estadísticas</button>
+        <button id="tabEditorBtn" type="button" class="nav-tab active">Editor</button>
+
       </nav>
 
       <div class="topbar-right">
@@ -40,7 +41,8 @@
           <span class="fmt-pill fmt-fb2">FB2</span>
           <span class="fmt-pill fmt-cbz">CBZ</span>
         </div>
-        <button id="accountBtn" type="button" class="btn btn-secondary btn-sm account-btn" title="Iniciar sesión y sincronizar entre dispositivos">
+        <button id="accountBtn" type="button" class="btn btn-secondary btn-sm account-btn"
+          title="Iniciar sesión y sincronizar entre dispositivos">
           <span id="accountStatusDot" class="acct-dot dot-offline" aria-hidden="true"></span>
           <span id="accountBtnLabel">Cuenta / Sync</span>
         </button>
@@ -558,12 +560,14 @@
       </div>
       <div class="modal-body">
         <div id="authFileProtocolNotice" class="auth-notice hidden">
-          Estás abriendo el archivo localmente (<code>file://</code>). Para sincronizar entre PC y móvil abre LibrisMeta desde tu sitio publicado en <strong>Netlify</strong> (o <code>netlify dev</code>).
+          Estás abriendo el archivo localmente (<code>file://</code>). Para sincronizar entre PC y móvil abre LibrisMeta
+          desde tu sitio publicado en <strong>Netlify</strong> (o <code>netlify dev</code>).
         </div>
 
         <div id="authLoggedOutView">
           <p class="auth-intro">
-            Inicia sesión o crea una cuenta para respaldar y sincronizar tu <strong>Biblioteca</strong> y <strong>Estadísticas</strong> entre tu PC y tu móvil.
+            Inicia sesión o crea una cuenta para respaldar y sincronizar tu <strong>Biblioteca</strong> y
+            <strong>Estadísticas</strong> entre tu PC y tu móvil.
           </p>
           <div class="auth-mode-tabs">
             <button id="authModeLogin" type="button" class="auth-mode-tab active">Iniciar sesión</button>
@@ -572,11 +576,13 @@
           <form id="authForm" class="auth-form">
             <div class="field-group">
               <label for="authUsername">Usuario</label>
-              <input id="authUsername" type="text" autocomplete="username" minlength="3" maxlength="32" placeholder="Ej. juan_lector" required />
+              <input id="authUsername" type="text" autocomplete="username" minlength="3" maxlength="32"
+                placeholder="Ej. juan_lector" required />
             </div>
             <div class="field-group">
               <label for="authPassword">Contraseña</label>
-              <input id="authPassword" type="password" autocomplete="current-password" minlength="6" maxlength="128" placeholder="Mínimo 6 caracteres" required />
+              <input id="authPassword" type="password" autocomplete="current-password" minlength="6" maxlength="128"
+                placeholder="Mínimo 6 caracteres" required />
             </div>
             <div id="authErrorBox" class="auth-error hidden" role="alert"></div>
             <button id="authSubmitBtn" type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
